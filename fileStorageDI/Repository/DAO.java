@@ -1,8 +1,10 @@
 package ua.nikolay.fileStorageDI.Repository;
 
-public interface DAO<T> {
-    public T save(T t);
-    public T delete(T t);
-    public T update(T t);
-    public T findById(long id);
+import ua.nikolay.fileStorageDI.Repository.Exception.InternalServerErrorException;
+
+public interface DAO<T>  {
+    public T save(T t) throws InternalServerErrorException;
+    public T delete(T t)throws InternalServerErrorException;
+    public T update(T t)throws InternalServerErrorException;
+    public T findById(long id) throws InternalServerErrorException;
 }

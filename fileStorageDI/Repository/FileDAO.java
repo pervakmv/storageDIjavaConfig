@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import ua.nikolay.fileStorageDI.Model.File;
 import ua.nikolay.fileStorageDI.Model.Storage;
+import ua.nikolay.fileStorageDI.Repository.Exception.InternalServerErrorException;
+import ua.nikolay.fileStorageDI.Service.Exception.ValidateException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,34 +32,26 @@ public class FileDAO implements DAO<File> {
 
 
     @Override
-    public File save(File file) {
-        Session session = null;
-        Transaction tr = null;
-        try {
-            session = createSessionFactory().openSession();
-            tr = session.getTransaction();
-            tr.begin();
+    public File save(File file) throws InternalServerErrorException {
+
+
+        try (SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
             session.save(file);
             session.getTransaction().commit();
             System.out.println("Save file is done");
-
         } catch (HibernateException e) {
-            System.err.println("Save file is failed");
-            System.err.println(e.getMessage());
             file = null;
-        } finally {
-            if (session != null)
-                session.close();
+            throw new InternalServerErrorException("Save file is failed");
         }
-
         return file;
     }
 
-    public void saveFileList(List<File> files, Storage storage) {
-        Session session = null;
+    public void saveFileList(List<File> files, Storage storage) throws InternalServerErrorException {
         Transaction tr = null;
-        try {
-            session = createSessionFactory().openSession();
+        try (SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
             tr = session.getTransaction();
             tr.begin();
             for (File element : files) {
@@ -66,23 +60,18 @@ public class FileDAO implements DAO<File> {
             }
             session.getTransaction().commit();
             System.out.println("Save files are done");
-        } catch (HibernateException e) {
+        } catch (HibernateError e) {
             tr.rollback();
-            System.err.println("Save files are failed");
-            System.out.println(e.getMessage());
-        } finally {
-            if (session != null)
-                session.close();
+            throw new InternalServerErrorException("Save files are failed");
         }
     }//saveFileList
 
 
     @Override
-    public File delete(File file) {
-        Session session = null;
+    public File delete(File file) throws InternalServerErrorException {
         Transaction tr = null;
-        try {
-            session = createSessionFactory().openSession();
+        try (SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
             tr = session.getTransaction();
             tr.begin();
             session.delete(file);
@@ -90,24 +79,23 @@ public class FileDAO implements DAO<File> {
             System.out.println("Delete file is done");
 
         } catch (HibernateException e) {
-            System.err.println("Delete file is failed");
-            System.out.println(e.getMessage());
+
             file = null;
             if (tr != null)
                 tr.rollback();
-        } finally {
-            if (session != null)
-                session.close();
+
+            throw new InternalServerErrorException("Delete file is done");
         }
         return file;
     }
 
     @Override
-    public File update(File file) {
-        Session session = null;
+    public File update(File file) throws InternalServerErrorException {
+
         Transaction tr = null;
-        try {
-            session = createSessionFactory().openSession();
+        try (SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
+
             tr = session.getTransaction();
             tr.begin();
             session.update(file);
@@ -120,54 +108,39 @@ public class FileDAO implements DAO<File> {
             file = null;
             if (tr != null)
                 tr.rollback();
-        } finally {
-            if (session != null)
-                session.close();
+            throw new InternalServerErrorException("Update file " + file + "is failed");
         }
         return file;
     }
 
     @Override
-    public File findById(long id) {
-        Session session = null;
+    public File findById(long id) throws InternalServerErrorException {
+
         Transaction tr = null;
 
-        //List<File> resFile = new ArrayList<>();
         File resFile = new File();
-        try {
-            session = createSessionFactory().openSession();
+        try (SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
             tr = session.getTransaction();
             tr.begin();
-
             resFile = session.get(File.class, id);
-
-            //Query query = session.createQuery("from File where id= : id");
-            ///query.setParameter("id", id);
-            //resFile = query.list();
 
             if (resFile == null)
                 System.out.println("File with id: " + id + "does not exist");
             session.getTransaction().commit();
             System.out.println("find file by id is done");
-            ;
         } catch (HibernateException e) {
             System.err.println("find file by id is failed");
-            System.err.println(e.getMessage());
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+            throw new InternalServerErrorException("find file by id is failed");
         }
         return resFile;
     }
 
-    public List<File> fileList() {
+    public List<File> fileList() throws InternalServerErrorException {
         List<File> resList = new ArrayList();
-        Session session = null;
         Transaction tr = null;
-
-        try {
-            session = createSessionFactory().openSession();
+        try (SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
+             Session session = sessionFactory.openSession()) {
             tr = session.getTransaction();
             tr.begin();
             Query query = session.createQuery("from File");
@@ -175,28 +148,27 @@ public class FileDAO implements DAO<File> {
             session.getTransaction().commit();
             System.out.println("get lis done");
         } catch (HibernateException e) {
-            System.err.println("get list done with error");
-            System.out.println(e.getMessage());
-
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+            throw new InternalServerErrorException("get list donw with error");
         }
         return resList;
     }
 
-    public void fileExist(File file) throws Exception {
-        File readFile = findById(file.getId());
+    public void fileExist(File file) throws ValidateException {
+        File readFile = null;
+        try {
+            readFile = findById(file.getId());
+        } catch (InternalServerErrorException e) {
+            throw new ValidateException(e.getMessage());
+        }
         if (readFile == null)
-            throw new Exception("File with id: " + file.getId() + " is not exist");
+            throw new ValidateException("File with id: " + file.getId() + " is not exist");
     }
 
-    public List<File> readFileList(Storage storage) throws Exception {
+    public List<File> readFileList(Storage storage) throws InternalServerErrorException {
         List<File> files = fileList();
         List<File> resFilesList = new ArrayList();
         if (files == null) {
-            throw new Exception("Storage with id: " + storage.getId() + " have not files");
+            throw new InternalServerErrorException("Storage with id: " + storage.getId() + " have not files");
         }
         for (File element : files) {
             if (storage.equals(element.getStorage())) {

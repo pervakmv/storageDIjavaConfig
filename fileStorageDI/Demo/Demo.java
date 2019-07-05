@@ -10,7 +10,7 @@ import ua.nikolay.fileStorageDI.Repository.StorageDAO;
 import java.util.List;
 
 public class Demo {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         StorageDAO storageDAO = new StorageDAO();
 
         FileDAO fileDAO = new FileDAO();

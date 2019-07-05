@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import ua.nikolay.fileStorageDI.Model.File;
 import ua.nikolay.fileStorageDI.Model.Storage;
+import ua.nikolay.fileStorageDI.Repository.Exception.InternalServerErrorException;
 import ua.nikolay.fileStorageDI.Service.FileService;
 import ua.nikolay.fileStorageDI.Service.StorageService;
 
@@ -28,7 +29,7 @@ public class fileStorageController {
     private StorageService storageService;
 
     @RequestMapping(method = RequestMethod.POST, value = "/addfile", produces = "text/plain")
-    public String addFile(@RequestBody String file) {
+    public String addFile(@RequestBody String file) throws InternalServerErrorException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             File newFile = objectMapper.readValue(file, File.class);
@@ -44,14 +45,14 @@ public class fileStorageController {
 
     @RequestMapping(method = RequestMethod.GET, value = "/fileList", produces = "text/plain")
     public @ResponseBody
-    List<File> fileList() {
+    List<File> fileList()throws InternalServerErrorException {
         List<File> resList = fileService.fileList();
         System.out.println(resList);
         return resList;
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/addstorage", produces = "text/plain")
-    public String addStorage(@RequestBody String storage) {
+    public String addStorage(@RequestBody String storage) throws InternalServerErrorException {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             Storage newStorage = objectMapper.readValue(storage, Storage.class);
